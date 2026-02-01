@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Audio Player Widget</title>
+    <style>
+        :root { --primary: #ffb400; }
+        body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Segoe UI', sans-serif; background: transparent; overflow: hidden; }
+        
+        .player-container {
+            width: 280px; background: #1a1a1a; padding: 25px; border-radius: 40px;
+            text-align: center; color: white; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            position: relative;
+        }
+
+        .cover {
+            width: 180px; height: 180px; border-radius: 50%; margin: 0 auto 20px;
+            background: #333; border: 4px solid #222; background-size: cover; background-position: center;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5); transition: 0.5s;
+        }
+        .playing .cover { animation: rotate 12s linear infinite; border-color: var(--primary); }
+
+        .title { font-size: 1.1rem; font-weight: bold; margin: 10px 0 5px; height: 1.4em; overflow: hidden; }
+        .artist { font-size: 0.85rem; color: #888; margin-bottom: 20px; }
+
+        .progress-container { width: 100%; height: 6px; background: #333; border-radius: 5px; cursor: pointer; margin-bottom: 25px; }
+        .progress { height: 100%; background: var(--primary); border-radius: 5px; width: 0%; position: relative; box-shadow: 0 0 10px var(--primary); }
+
+        .controls { display: flex; justify-content: center; align-items: center; gap: 15px; }
+        button {
+            background: #222; border: none; color: white; width: 45px; height: 45px; 
+            border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            box-shadow: 4px 4px 8px #0f0f0f, -4px -4px 8px #252525; transition: 0.2s;
+        }
+        button:active { box-shadow: inset 2px 2px 5px #000; transform: scale(0.95); }
+        button.play-btn { width: 60px; height: 60px; background: var(--primary); color: black; font-size: 1.5rem; }
+
+        #playlist-window {
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(20, 20, 20, 0.95); border-radius: 40px; padding: 30px 20px;
+            box-sizing: border-box; overflow-y: auto; z-index: 10;
+        }
+        .track-item { padding: 12px; border-bottom: 1px solid #333; cursor: pointer; font-size: 0.9rem; text-align: left; transition: 0.2s; }
+        .track-item:hover { color: var(--primary); background: rgba(255,255,255,0.05); }
+
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="player-container" id="player">
+    <div id="playlist-window">
+        <h3 style="margin-top:0">Плейлист</h3>
+        <div id="list-content"></div>
+        <button onclick="togglePlaylist()" style="margin-top:20px; width:100%; border-radius:10px;">Закрыть</button>
+    </div>
+
+    <div class="cover" id="cover"></div>
+    <div class="title" id="title">Выбери трек</div>
+    <div class="artist" id="artist">Инструменты</div>
+
+    <div class="progress-container" id="progress-bar">
+        <div class="progress" id="progress"></div>
+    </div>
+
+    <div class="controls">
+        <button id="prev">⏮</button>
+        <button class="play-btn" id="play">▶</button>
+        <button id="next">⏭</button>
+        <button onclick="togglePlaylist()">☰</button>
+    </div>
+</div>
+
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const accentColor = params.get('color') || '#ffb400';
+    const customCover = params.get('cover') || 'https://via.placeholder.com/180';
+    
+    // Твои обновленные данные
+    const repoUser = "natashagodlevskaya16021995-ux";
+    const repoName = "audioplayer1"; 
+    
+    document.documentElement.style.setProperty('--primary', accentColor);
+    document.getElementById('cover').style.backgroundImage = `url(${customCover})`;
+
+    // Твой список музыкальных файлов
+    const fileNames = ["sacs.mp3", "lozhki.mp3", "buben.mp3", "organ.mp3", "maracas.mp3"];
+    
+    const songs = fileNames.map(name => ({
+        title: name.replace('.mp3', '').toUpperCase(),
+        url: `https://raw.githubusercontent.com/${repoUser}/${repoName}/main/music/${name}`
+    }));
+
+    let currentIndex = 0;
+    const audio = new Audio();
+    const playBtn = document.getElementById('play');
+
+    function loadSong(index) {
+        currentIndex = index;
+        const song = songs[currentIndex];
+        document.getElementById('title').innerText = song.title;
+        audio.src = song.url;
+    }
+
+    function togglePlay() {
+        if (!audio.src) loadSong(0);
+        if (audio.paused) {
+            audio.play().catch(e => console.log("Ошибка воспроизведения:", e));
+            playBtn.innerText = '⏸';
+            document.getElementById('player').classList.add('playing');
+        } else {
+            audio.pause();
+            playBtn.innerText = '▶';
+            document.getElementById('player').classList.remove('playing');
+        }
+    }
+
+    function togglePlaylist() {
+        const win = document.getElementById('playlist-window');
+        win.style.display = win.style.display === 'block' ? 'none' : 'block';
+    }
+
+    const listContent = document.getElementById('list-content');
+    songs.forEach((song, index) => {
+        const item = document.createElement('div');
+        item.className = 'track-item';
+        item.innerText = (index + 1) + ". " + song.title;
+        item.onclick = () => { loadSong(index); togglePlay(); togglePlaylist(); };
+        listContent.appendChild(item);
+    });
+
+    playBtn.onclick = togglePlay;
+    document.getElementById('next').onclick = () => { currentIndex = (currentIndex + 1) % songs.length; loadSong(currentIndex); togglePlay(); };
+    document.getElementById('prev').onclick = () => { currentIndex = (currentIndex - 1 + songs.length) % songs.length; loadSong(currentIndex); togglePlay(); };
+
+    audio.ontimeupdate = () => {
+        const percent = (audio.currentTime / audio.duration) * 100;
+        document.getElementById('progress').style.width = percent + '%';
+    };
+
+    document.getElementById('progress-bar').onclick = (e) => {
+        const width = e.currentTarget.clientWidth;
+        const clickX = e.offsetX;
+        audio.currentTime = (clickX / width) * audio.duration;
+    };
+
+    loadSong(0);
+</script>
+</body>
+</html>
